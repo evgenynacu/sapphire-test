@@ -1,24 +1,30 @@
-import { DeployFunction } from "hardhat-deploy/types";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
+import * as ethers from "ethers";
 
-const DAY_IN_SECONDS = 60 * 60 * 24;
-const NOW_IN_SECONDS = Math.round(Date.now() / 1000);
-const UNLOCK_IN_X_DAYS = NOW_IN_SECONDS + DAY_IN_SECONDS * 1; // 1 DAY
+const hre = require("hardhat");
+import { BaseContract, Contract, ContractFactory } from "@ethersproject/contracts";
+import {sleep} from "@nomicfoundation/hardhat-verify/internal/utilities";
+async function main() {
+    console.log("deploying contract")
 
-const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployer } = await hre.getNamedAccounts();
-  const { deploy } = hre.deployments;
-  const lockedAmount = hre.ethers.parseEther("0.01").toString();
+    let contract: Contract = (await hre.ethers.deployContract(
+      "TestPrivacy",
+      []
+    ))
 
-  const lock = await deploy("Lock", {
-    from: deployer,
-    args: [UNLOCK_IN_X_DAYS],
-    log: true,
-    value: lockedAmount,
-  });
+    // verify
+    console.log("deployed", contract)
+    await sleep(5000);
+    console.log("verify")
+    await hre.run("verify:verify", {
+        address: contract.target,
+        constructorArguments: [],
+    });
+    console.log("verify done")
+}
 
-  console.log(`Lock contract: `, lock.address);
-};
-export default func;
-func.id = "deploy_lock"; // id required to prevent reexecution
-func.tags = ["Lock"];
+// We recommend this pattern to be able to use async/await everywhere
+// and properly handle errors.
+main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+});

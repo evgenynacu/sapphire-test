@@ -3,14 +3,15 @@ import "hardhat-deploy";
 import type { HardhatUserConfig } from "hardhat/config";
 import { vars } from "hardhat/config";
 import type { NetworkUserConfig } from "hardhat/types";
+import "@oasisprotocol/sapphire-hardhat";
 
 import "./tasks/accounts";
 import "./tasks/lock";
 
 // Run 'npx hardhat vars setup' to see the list of variables that need to be set
 
-const mnemonic: string = vars.get("MNEMONIC");
-const infuraApiKey: string = vars.get("INFURA_API_KEY");
+const key: string = vars.get("PRIVATE_KEY");
+const infuraApiKey: string = vars.get("INFURA_API_KEY", "");
 
 const chainIds = {
   "arbitrum-mainnet": 42161,
@@ -23,6 +24,7 @@ const chainIds = {
   "polygon-mainnet": 137,
   "polygon-mumbai": 80001,
   sepolia: 11155111,
+  sapphire_testnet: 23295,
 };
 
 function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
@@ -34,15 +36,14 @@ function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
     case "bsc":
       jsonRpcUrl = "https://bsc-dataseed1.binance.org";
       break;
+    case "sapphire_testnet":
+      jsonRpcUrl = "https://testnet.sapphire.oasis.io"
+      break;
     default:
       jsonRpcUrl = "https://" + chain + ".infura.io/v3/" + infuraApiKey;
   }
   return {
-    accounts: {
-      count: 10,
-      mnemonic,
-      path: "m/44'/60'/0'/0",
-    },
+    accounts: [key],
     chainId: chainIds[chain],
     url: jsonRpcUrl,
   };
@@ -63,7 +64,18 @@ const config: HardhatUserConfig = {
       polygon: vars.get("POLYGONSCAN_API_KEY", ""),
       polygonMumbai: vars.get("POLYGONSCAN_API_KEY", ""),
       sepolia: vars.get("ETHERSCAN_API_KEY", ""),
+      sapphire_testnet: "xyz"
     },
+    customChains: [
+      {
+        network: "sapphire_testnet",
+        chainId: chainIds["sapphire_testnet"],
+        urls: {
+          apiURL: "https://testnet.explorer.sapphire.oasis.dev/api",
+          browserURL: "https://explorer.oasis.io/testnet/sapphire/",
+        },
+      }
+    ]
   },
   gasReporter: {
     currency: "USD",
@@ -73,15 +85,11 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
-      accounts: {
-        mnemonic,
-      },
+      accounts: [],
       chainId: chainIds.hardhat,
     },
     ganache: {
-      accounts: {
-        mnemonic,
-      },
+      accounts: [],
       chainId: chainIds.ganache,
       url: "http://localhost:8545",
     },
@@ -93,6 +101,7 @@ const config: HardhatUserConfig = {
     "polygon-mainnet": getChainConfig("polygon-mainnet"),
     "polygon-mumbai": getChainConfig("polygon-mumbai"),
     sepolia: getChainConfig("sepolia"),
+    sapphire_testnet: getChainConfig("sapphire_testnet"),
   },
   paths: {
     artifacts: "./artifacts",
@@ -101,7 +110,7 @@ const config: HardhatUserConfig = {
     tests: "./test",
   },
   solidity: {
-    version: "0.8.19",
+    version: "0.8.20",
     settings: {
       metadata: {
         // Not including the metadata hash
